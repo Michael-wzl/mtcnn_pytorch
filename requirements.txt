@@ -1,0 +1,6 @@
+opencv-python
+tqdm
+torch==2.7.1
+torchvision==0.22.1
+--extra-index-url https://download.pytorch.org/whl/cu118
+# Delete the last line if you do not use CUDA

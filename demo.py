@@ -86,13 +86,13 @@ def detect_imgs(scr_img_path: str, dst_img_path: str, device: Optional[torch.dev
         cv2.imwrite(dst_img_path, img)
 
 if __name__ == "__main__":
-    mode = "vid" # vid / imgs
-    device = torch.device("mps")
+    mode = "imgs" # vid / imgs
+    device = torch.device("cuda:0")
     if mode == 'vid':
         scr_vid_path = "assets/bc.mp4"
-        dst_vid_path = "results/vids/bc_detected.mp4"
+        dst_vid_path = "assets/bc_detected.mp4"
         detect_vid(scr_vid_path, dst_vid_path, device=device)
     elif mode == 'imgs':
         scr_imgs_folder = "assets/bbt.png"
-        dst_imgs_folder = "results/imgs/bb_detected.png"
+        dst_imgs_folder = "assets/bbt_detected.png"
         detect_imgs(scr_imgs_folder, dst_imgs_folder, device=device)
