@@ -27,3 +27,6 @@ $ pip install -r requirements.txt
 ```commandline
 $ python demo.py
 ```
+
+## Future Work
+Currently, we are still feeding the images into the model one by one, without making full use of batch calculation. The primary obstacle is dealing with zero-detection images within a batch. This can be a point of improvement. Also, many operations are still not optimal, like the `_square` and `_calibrate` function. Moreover, we still have misdetections, so the hyperparameters like `nms_thresh` may have to be further tuned. Lastly, if I find that many people are interested in the repo, I take the trouble to turn it into a library that can be installed through `pip` and `conda` and has undergone more comprehensive testings. 
