@@ -13,9 +13,6 @@ class MTCNN(object):
     @torch.no_grad()
     def __init__(
         self,
-        verbose: bool = False, 
-        return_zero: bool = True,
-        return_type: str = 'any', 
         conf_threshes: List[float] = [0.6, 0.7, 0.8],
         nms_threshes: List[float] = [0.7, 0.7, 0.7],
         weight_paths: Dict[str, str] = {'pnet': "weights/pnet.npy", 'rnet': "weights/rnet.npy", 'onet': "weights/onet.npy"},
@@ -27,9 +24,6 @@ class MTCNN(object):
         Init a MTCNN model.
 
         Args:
-            verbose: If True, enables verbose logging.
-            return_zero: If False, returns (None, None) when no faces are detected. Otherwise, return empty tensors with B = 0, N = 0, C = 5 for boxes and 10 for landmarks.
-            return_type: Type of the return value. Can be 'any', 'tensor', or 'list'. If 'any', the return type is the same as the input. 
             conf_threshes: List of confidence thresholds for PNet, RNet, and ONet.
             nms_threshes: List of NMS thresholds for PNet, RNet, and ONet.
             weight_paths: Dictionary mapping network names to their weight file paths.
@@ -37,9 +31,6 @@ class MTCNN(object):
             min_face_size: Minimum size of faces to detect.
             scale_factor: Scale factor for image pyramid.
         """
-        self.verbose = verbose
-        self.return_zero = return_zero
-        self.return_type = return_type
         self.conf_threshes = conf_threshes
         self.nms_threshes = nms_threshes
         self.min_face_size = float(min_face_size)
@@ -60,11 +51,14 @@ class MTCNN(object):
         return self.detect(imgs)
 
     @torch.inference_mode()
-    def detect(self, imgs: Union[torch.Tensor, List[torch.Tensor]]) -> Union[Tuple[torch.Tensor, torch.Tensor], Tuple[List[torch.Tensor], List[torch.Tensor]], Tuple[None, None]]:
+    def detect(self, imgs: Union[torch.Tensor, List[torch.Tensor]], verbose: bool = False, return_zero: bool = True, return_type: str = 'any') -> Union[Tuple[torch.Tensor, torch.Tensor], Tuple[List[torch.Tensor], List[torch.Tensor]], Tuple[None, None]]:
         """
         Args:
             imgs: FloatTensor [B,3,H,W] or [3,H,W], RGB, Range [0,255].
                 or List[FloatTensor] of shape [3,H,W], [B,3,H,W] or a mix of both.
+            verbose: If True, enables verbose logging.
+            return_zero: If False, returns (None, None) when no faces are detected. Otherwise, return empty tensors with B = 0, N = 0, C = 5 for boxes and 10 for landmarks.
+            return_type: Type of the return value. Can be 'any', 'tensor', or 'list'. If 'any', the return type is the same as the input. 
 
         Returns:
             boxes: Tensor [B,N,5]  (x1,y1,x2,y2,score) or List[Tensor] of shape [N,5] or None or empty tensor of shape [0,0,5]
@@ -74,13 +68,13 @@ class MTCNN(object):
             left eye, right eye, nose, left mouth corner, right mouth corner
         """
         assert isinstance(imgs, (torch.Tensor, list)), "Input must be a Tensor or a list of Tensors."
-        return_type = 'tensor'
+        _return_type = 'tensor'
         if isinstance(imgs, torch.Tensor) and len(imgs.shape) == 4:  # [B, 3, H, W]
             imgs = [imgs[[i]] for i in range(imgs.shape[0])]
         elif isinstance(imgs, torch.Tensor) and len(imgs.shape) == 3:  # [3, H, W]
             imgs = [imgs.unsqueeze(0)]
         else:
-            return_type = 'list'
+            _return_type = 'list'
             imgs_list = []
             for img in imgs:
                 if len(img.shape) == 3:
@@ -91,8 +85,8 @@ class MTCNN(object):
                 elif len(img.shape) == 4 and img.shape[0] > 1:
                     imgs_list.extend([img[[i]] for i in range(img.shape[0])])
             imgs = imgs_list
-        return_type = self.return_type if self.return_type != 'any' else return_type
-        pbar = tqdm.tqdm(enumerate(imgs), desc="Detecting Faces", disable=not self.verbose)
+        return_type = return_type if return_type != 'any' else _return_type
+        pbar = tqdm.tqdm(enumerate(imgs), desc="Detecting Faces", disable=not verbose)
         bboxes, ldmks = [], []
         for img_idx, img in pbar:
             img: torch.Tensor = img.to(self.device) # [1, 3, H, W]
@@ -181,7 +175,7 @@ class MTCNN(object):
             ldmks.append(landmarks.cpu())
 
         if len(bboxes) == 0 or len(ldmks) == 0:
-            return (None, None) if not self.return_zero else ((torch.empty(0, 0, 5), torch.empty(0, 0, 10)) if return_type == 'tensor' else ([], []))
+            return (None, None) if not return_zero else ((torch.empty(0, 0, 5), torch.empty(0, 0, 10)) if return_type == 'tensor' else ([], []))
         if return_type == 'tensor':
             return torch.cat(bboxes, dim=0), torch.cat(ldmks, dim=0)
         if return_type == 'list':
