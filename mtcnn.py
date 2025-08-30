@@ -171,8 +171,8 @@ class MTCNN(object):
                 continue
             all_bboxes_stage3 = all_bboxes_stage3[keep]
             landmarks = landmarks[keep]  # [N, 10]
-            bboxes.append(all_bboxes_stage3.cpu())
-            ldmks.append(landmarks.cpu())
+            bboxes.append(all_bboxes_stage3.unsqueeze(0).cpu())
+            ldmks.append(landmarks.unsqueeze(0).cpu())
 
         if len(bboxes) == 0 or len(ldmks) == 0:
             return (None, None) if not return_zero else ((torch.empty(0, 0, 5), torch.empty(0, 0, 10)) if return_type == 'tensor' else ([], []))

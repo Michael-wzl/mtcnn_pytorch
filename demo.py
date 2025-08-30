@@ -39,6 +39,7 @@ def detect_vid(scr_vid_path: str, dst_vid_path: str, device: Optional[torch.devi
         boxes, landmarks = detector(img_tensor)
         time_cnt += (datetime.now() - start_time).total_seconds()
         if boxes is not None and len(boxes) > 0:
+            boxes = boxes[0]
             for box in boxes.cpu().numpy():
                 x1, y1, x2, y2, score = box[:5]
                 x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
@@ -73,6 +74,7 @@ def detect_imgs(scr_img_path: str, dst_img_path: str, device: Optional[torch.dev
     boxes, landmarks = detector(img_tensor)
     print(f"Detection time: {datetime.now() - start}")
     if boxes is not None and len(boxes) > 0:
+        boxes = boxes[0]
         for box in boxes.cpu().numpy():
             x1, y1, x2, y2, score = box[:5]
             x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
@@ -86,8 +88,8 @@ def detect_imgs(scr_img_path: str, dst_img_path: str, device: Optional[torch.dev
         cv2.imwrite(dst_img_path, img)
 
 if __name__ == "__main__":
-    mode = "imgs" # vid / imgs
-    device = torch.device("cuda:0")
+    mode = "vid" # vid / imgs
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "mps")
     if mode == 'vid':
         scr_vid_path = "assets/bc.mp4"
         dst_vid_path = "assets/bc_detected.mp4"
